@@ -1,0 +1,38 @@
+server:
+  port: 0
+spring:
+  application:
+    name: user-service
+  rabbitmq:
+      host: 127.0.0.1
+      port: 5672
+      username: guest
+      password: guest
+  h2:
+    console:
+      enabled: true
+      settings:
+        web-allow-others: true
+      path: /h2-console
+
+eureka:
+  instance:
+    instance-id: ${spring.cloud.client.hostname}:${spring.application.instance_id:${random.value}}
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://127.0.0.1:8761/eureka
+
+greeting:
+  message: Welcome to the Simple E-commerce.
+
+management: # 서버 재기동 안해도 설정 정보 바뀌면 자동으로 인식
+  endpoints:
+    web:
+      exposure:
+        include: refresh, health, beans, busrefresh
+# refresh는 설정 정보를 refresh하겠다는 의미임
+logging:
+  level:
+    com.example.demo.client: DEBUG
