@@ -8,6 +8,8 @@ import com.example.demo.vo.ResponseOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -29,14 +31,18 @@ public class UserServiceImpl implements UserService {
     private Environment env;
     RestTemplate restTemplate;
     OrderServiceClient orderServiceClient;
+    CircuitBreakerFactory circuitBreakerFactory;
+    // 특정 모듈 호출 실패시에도 유저 모듈은 불러올 수 있어야 한다 따라서 CuicuitBreaker를 만든다
 
     public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder,
-                           Environment env, RestTemplate restTemplate, OrderServiceClient orderServiceClient) {
+                           Environment env, RestTemplate restTemplate, OrderServiceClient orderServiceClient,
+                           CircuitBreakerFactory circuitBreakerFactory) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.env=env;
         this.restTemplate=restTemplate;
         this.orderServiceClient=orderServiceClient;
+        this.circuitBreakerFactory=circuitBreakerFactory;
     }
 
     @Override
@@ -75,7 +81,14 @@ public class UserServiceImpl implements UserService {
 //            log.error(e.getMessage());
 //        }
 
-        List<ResponseOrder> ordersList = orderServiceClient.getOrders(userId);
+        //List<ResponseOrder> ordersList = orderServiceClient.getOrders(userId);
+
+        log.info("Before call orders microservice");
+        CircuitBreaker circuitbreaker = circuitBreakerFactory.create("circuitbreaker"); // 서킷브레이커 만듬
+        // 특정 메소드 실행 후 성공하면 해당 결과를 반환하고 실패하면 빈 arrayList 객체를 반환한다
+        List<ResponseOrder> ordersList = circuitbreaker.run(() -> orderServiceClient.getOrders(userId),
+                throwable -> new ArrayList<>());
+        log.info("After call orders microservice");
         userDto.setOrders(ordersList);
         return userDto;
 

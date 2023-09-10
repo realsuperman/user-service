@@ -3,6 +3,12 @@ server:
 spring:
   application:
     name: user-service
+  zipkin:
+    base-url: http://localhost:9411
+    enabled: true
+  sleuth: # zipkin에 데이터를 전달하는 역할임
+    sampler:
+      probability: 1.0
   rabbitmq:
       host: 127.0.0.1
       port: 5672
@@ -28,10 +34,10 @@ greeting:
   message: Welcome to the Simple E-commerce.
 
 management: # 서버 재기동 안해도 설정 정보 바뀌면 자동으로 인식
-  endpoints:
+  endpoints: # 엔드포인트 설정
     web:
       exposure:
-        include: refresh, health, beans, busrefresh
+        include: refresh, health, beans, busrefresh, info, prometheus, metrics
 # refresh는 설정 정보를 refresh하겠다는 의미임
 logging:
   level:
